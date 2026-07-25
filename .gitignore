@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+
+# Virtual environment
+venv/
+env/
+.venv/
+ENV/
+
+# Model weights & downloaded checkpoints (large, re-downloadable)
+*.pt
+*.pth
+*.onnx
+*.weights
+weights/
+checkpoints/
+*.hf_cache/
+.cache/
+~/.cache/torch/
+~/.cache/huggingface/
+
+# YOLO / ultralytics runs
+runs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment / secrets
+.env
+*.env.local
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# Evaluation artifacts that are regenerated, not source
+evaluation/*.png
+evaluation/results_cache/
+
+# Test data (large images/videos you may not want in git, keep folder via .gitkeep)
+# Uncomment if your sample media gets large:
+# test_data/*
+# !test_data/.gitkeep

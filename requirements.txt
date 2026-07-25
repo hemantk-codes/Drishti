@@ -1,0 +1,18 @@
+# Object detection
+ultralytics
+
+# Backend / API / streaming
+fastapi
+uvicorn[standard]
+websockets
+python-multipart
+
+# Computer vision & numerics
+opencv-python
+numpy
+Pillow
+
+# Deep learning (depth estimation + detection backbone)
+torch
+torchvision
+transformers
