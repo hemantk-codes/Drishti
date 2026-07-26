@@ -1,23 +1,22 @@
 # Drishti — Project Context
 *(Paste this whole file at the start of any new AI chat, or save it as `CLAUDE.md` in your project root if you're using Claude Code — it auto-loads as context every session, so you won't need to paste it manually.)*
 
-This file is the single source of truth for what this project is, why it's built this way, and how far along it is. Update **Section 11** every time you finish a phase — that's what makes this a *living* doc instead of a one-time brief.
+This file is the single source of truth for what this project is, why it's built this way, and how far along it is. Update **Section 9** every time you finish a phase — that's what makes this a *living* doc instead of a one-time brief.
 
 ---
 
 ## 0. Quick facts
+
+| | |
+|---|---|
+| **Course** | Applied AI and Prototype Development (AAIPD), 3rd year BTech CSE |
+| **Grading** | No exam — 100% final evaluation of the working prototype |
+| **Graded on** | (a) how much genuine AI is embedded — not one pretrained model wrapped in a UI, and (b) how accurate/measurable the results are |
+| **Secondary goal** | Strong enough for a resume/portfolio — code quality, docs, and a real demo all matter |
+| **Project title** | Drishti — AI-Powered Real-Time Scene Description and Obstacle-Alert System for the Visually Impaired |
 | **GitHub** | https://github.com/hemantk-codes/Drishti (private) |
 
-## 9. Progress tracker
-- [x] Phase 0 — Environment & repo setup
-- [x] Phase 1 — Object detection module
-      → detection/detector.py built and tested via webcam.
-      YOLOv8n, CPU-only, ~55ms/frame inference (~18fps).
-      13-class COCO whitelist (person, car, bicycle, bus, truck, motorcycle,
-      traffic light, stop sign, bench, chair, dog, backpack, suitcase).
-      Confirmed: boxes + labels display correctly, console prints per-frame ms.
-- [ ] Phase 2 — Depth estimation module
-...
+---
 
 ## 1. The problem
 
@@ -147,8 +146,13 @@ Native mobile app, multi-camera setups, cross-session person re-identification, 
 
 ## 9. Progress tracker — update as you complete each phase
 
-- [ ] Phase 0 — Environment & repo setup
-- [ ] Phase 1 — Object detection module
+- [x] Phase 0 — Environment & repo setup
+- [x] Phase 1 — Object detection module
+      → `detection/detector.py` built and tested via webcam.
+      YOLOv8n, CPU-only, ~55ms/frame inference (~18fps).
+      13-class COCO whitelist (person, car, bicycle, bus, truck, motorcycle,
+      traffic light, stop sign, bench, chair, dog, backpack, suitcase).
+      Confirmed: boxes + labels display correctly, console prints per-frame ms.
 - [ ] Phase 2 — Depth estimation module
 - [ ] Phase 3 — Fusion engine (priority + NLG)
 - [ ] Phase 4 — Backend API (FastAPI + WebSocket)
