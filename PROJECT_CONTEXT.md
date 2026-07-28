@@ -153,7 +153,7 @@ Native mobile app, multi-camera setups, cross-session person re-identification, 
       13-class COCO whitelist (person, car, bicycle, bus, truck, motorcycle,
       traffic light, stop sign, bench, chair, dog, backpack, suitcase).
       Confirmed: boxes + labels display correctly, console prints per-frame ms.
-- [ ] Phase 2 — Depth estimation module
+- [x] Phase 2 — Depth estimation module
 - [ ] Phase 3 — Fusion engine (priority + NLG)
 - [ ] Phase 4 — Backend API (FastAPI + WebSocket)
 - [ ] Phase 5 — Frontend PWA
