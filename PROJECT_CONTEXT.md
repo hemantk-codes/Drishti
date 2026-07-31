@@ -154,7 +154,7 @@ Native mobile app, multi-camera setups, cross-session person re-identification, 
       traffic light, stop sign, bench, chair, dog, backpack, suitcase).
       Confirmed: boxes + labels display correctly, console prints per-frame ms.
 - [x] Phase 2 — Depth estimation module
-- [ ] Phase 3 — Fusion engine (priority + NLG)
+- [X] Phase 3 — Fusion engine (priority + NLG)
 - [ ] Phase 4 — Backend API (FastAPI + WebSocket)
 - [ ] Phase 5 — Frontend PWA
 - [ ] Phase 6 — End-to-end integration & tuning
