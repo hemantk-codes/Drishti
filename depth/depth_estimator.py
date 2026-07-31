@@ -343,10 +343,10 @@ if __name__ == "__main__":
         # purpose: calibrate() will refuse to run until you replace them
         # with your own tape measurements -- that's a deliberate safety net,
         # not a bug.
-        {"name": "chair (nearest)",    "bbox": (340, 560, 830, 963), "real_meters": 0.0},  # <-- MEASURE
-        {"name": "desk/monitor",       "bbox": (75,  355, 220, 480), "real_meters": 0.0},  # <-- MEASURE
-        {"name": "bed",                "bbox": (500, 420, 950, 750), "real_meters": 0.0},  # <-- MEASURE
-        {"name": "back wall shelf",    "bbox": (960, 95,  1270, 260), "real_meters": 0.0},  # <-- MEASURE
+        {"name": "chair (nearest)",    "bbox": (340, 560, 830, 963), "real_meters": 0.7},  # <-- MEASURE
+        {"name": "desk/monitor",       "bbox": (75,  355, 220, 480), "real_meters": 1.8},  # <-- MEASURE
+        {"name": "bed",                "bbox": (500, 420, 950, 750), "real_meters": 2.2},  # <-- MEASURE
+        {"name": "back wall shelf",    "bbox": (960, 95,  1270, 260), "real_meters": 4.0},  # <-- MEASURE
     ]
 
     if not CALIBRATION_OBJECTS:
