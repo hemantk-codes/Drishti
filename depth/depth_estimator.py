@@ -57,6 +57,7 @@ depth map orientation (near vs far), which are the two things most likely
 to need a small tweak on a real machine.
 """
 
+import os
 import time
 import warnings
 
@@ -274,6 +275,70 @@ def relative_to_meters(relative_depth_value: float, calibration: dict) -> float:
 
 
 # ---------------------------------------------------------------------------
+# Calibration persistence
+# ---------------------------------------------------------------------------
+# WHY THIS EXISTS: Phase 2's __main__ block computes a calibration dict
+# {m, c} once, from whatever CALIBRATION_OBJECTS + reference photo were
+# used at the time -- but that dict lived only in local variables and
+# vanished when the script exited. Phase 4's backend runs continuously and
+# needs a calibration dict available at STARTUP, without re-running the
+# whole depth-model-load + reference-photo dance every time the server
+# boots. So: __main__ now saves its computed calibration to a small JSON
+# file, and load_calibration() reads it back. Re-running depth_estimator.py
+# after a fresh round of real tape measurements automatically updates this
+# file -- no code edits needed elsewhere.
+
+CALIBRATION_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "calibration.json")
+
+# Bootstrap fallback: the actual calibration fit from this project's Phase 2
+# run (chair/desk/bed/back-wall-shelf provisional values), so the backend
+# can start up even before calibration.json exists on a fresh machine.
+# Still provisional -- same caveat as before, replace with real
+# measurements before trusting the numbers in an evaluation.
+_BOOTSTRAP_DEFAULT_CALIBRATION = {"m": 0.01745352743998648, "c": -0.5103083743909744}
+_BOOTSTRAP_IS_PROVISIONAL = True
+
+
+def save_calibration(calibration: dict, is_provisional: bool, path: str = None) -> str:
+    """Writes a calibration dict to disk as JSON. Returns the path used."""
+    import json
+
+    path = path or CALIBRATION_FILE
+    payload = {**calibration, "provisional": is_provisional}
+    with open(path, "w") as f:
+        json.dump(payload, f, indent=2)
+    return path
+
+
+def load_calibration(path: str = None) -> dict:
+    """
+    Loads a calibration dict from disk. Falls back to a baked-in bootstrap
+    default (still marked provisional) if the file doesn't exist yet, so
+    the backend never hard-crashes on startup just because Phase 2's demo
+    hasn't been (re)run on this particular machine.
+    """
+    import json
+
+    path = path or CALIBRATION_FILE
+    if os.path.exists(path):
+        with open(path) as f:
+            data = json.load(f)
+        if data.get("provisional"):
+            print(
+                f"[depth_estimator] Loaded PROVISIONAL calibration from {path} "
+                "-- not tape-measured yet, fine for dev, not for evaluation."
+            )
+        return {"m": data["m"], "c": data["c"]}
+
+    print(
+        f"[depth_estimator] No calibration file at {path} -- using the "
+        "built-in bootstrap default (also provisional). Run "
+        "'python depth/depth_estimator.py' once to generate a real one."
+    )
+    return dict(_BOOTSTRAP_DEFAULT_CALIBRATION)
+
+
+# ---------------------------------------------------------------------------
 # Standalone demo / sanity check
 # ---------------------------------------------------------------------------
 
@@ -337,17 +402,23 @@ if __name__ == "__main__":
     #   2. Physically tape-measure the real distance from the camera to it.
     # Use 3+ objects spread across near/mid/far distances for a better fit.
     CALIBRATION_OBJECTS = [
-        # Estimated bboxes from your room photo -- verify each yellow box
-        # actually lands on the right object once the heatmap window opens,
-        # nudge the numbers if not. real_meters are placeholders (0.0) on
-        # purpose: calibrate() will refuse to run until you replace them
-        # with your own tape measurements -- that's a deliberate safety net,
-        # not a bug.
-        {"name": "chair (nearest)",    "bbox": (340, 560, 830, 963), "real_meters": 0.7},  # <-- MEASURE
-        {"name": "desk/monitor",       "bbox": (75,  355, 220, 480), "real_meters": 1.8},  # <-- MEASURE
-        {"name": "bed",                "bbox": (500, 420, 950, 750), "real_meters": 2.2},  # <-- MEASURE
-        {"name": "back wall shelf",    "bbox": (960, 95,  1270, 260), "real_meters": 4.0},  # <-- MEASURE
+        # !!! PROVISIONAL CALIBRATION !!!
+        # These real_meters values are EYEBALLED ESTIMATES from the room
+        # photo, NOT tape-measured. This unblocks Phase 3+ for now, but
+        # these numbers are not defensible in an evaluation as-is. Before
+        # Phase 7 (accuracy evaluation), come back and replace these 4 with
+        # real measurements -- even a phone AR measure app or a known-size
+        # object (a ruler, an A4 sheet, a floor tile) laid end-to-end is
+        # enough; you don't need an actual tape measure. Any real
+        # measurement beats an eyeballed guess.
+        {"name": "chair (nearest)",    "bbox": (340, 560, 830, 963),  "real_meters": 0.7},  # PROVISIONAL
+        {"name": "desk/monitor",       "bbox": (75,  355, 220, 480),  "real_meters": 1.8},  # PROVISIONAL
+        {"name": "bed",                "bbox": (500, 420, 950, 750),  "real_meters": 2.2},  # PROVISIONAL
+        {"name": "back wall shelf",    "bbox": (960, 95,  1270, 260), "real_meters": 4.0},  # PROVISIONAL
     ]
+    # Flip this to False once every entry above is a real measurement, not
+    # a guess -- it's what triggers the loud console reminder below.
+    CALIBRATION_IS_PROVISIONAL = True
 
     if not CALIBRATION_OBJECTS:
         print(
@@ -356,6 +427,15 @@ if __name__ == "__main__":
             "tape-measured (bbox, real_meters) entries, then rerun."
         )
     else:
+        if CALIBRATION_IS_PROVISIONAL:
+            print(
+                "\n[demo] *** WARNING: CALIBRATION_IS_PROVISIONAL = True *** "
+                "The real_meters values below are eyeballed estimates, not "
+                "measured distances. Fine for unblocking Phase 3+ dev work, "
+                "NOT fine to quote in your evaluation. Replace with real "
+                "measurements (phone AR app or a known-size object as a "
+                "ruler) before Phase 7."
+            )
         ref_points = []
         print("\n[demo] Reading relative depth for your calibration objects:")
         for obj in CALIBRATION_OBJECTS:
@@ -365,6 +445,9 @@ if __name__ == "__main__":
 
         calibration = calibrate(ref_points)
         print(f"[demo] calibration fit = {calibration}")
+
+        saved_path = save_calibration(calibration, CALIBRATION_IS_PROVISIONAL)
+        print(f"[demo] Saved calibration to {saved_path} -- Phase 4's backend will load this at startup.")
 
         print("\n[demo] Checking fit against the same objects (sanity check only --")
         print("       a true test would use a held-out object not in the fit):")
