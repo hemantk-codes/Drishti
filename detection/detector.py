@@ -78,7 +78,7 @@ def detect(frame: np.ndarray) -> list[dict]:
     """
     # verbose=False stops ultralytics from printing its own per-frame log
     # line -- we do our own timing/printing in __main__ instead.
-    results = _model(frame, verbose=False)[0]
+    results = _model(frame, conf=0.5, verbose=False)[0]
 
     detections = []
     for box in results.boxes:

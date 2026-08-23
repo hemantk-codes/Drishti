@@ -146,16 +146,16 @@ Native mobile app, multi-camera setups, cross-session person re-identification, 
 
 ## 9. Progress tracker — update as you complete each phase
 
-- [x] Phase 0 — Environment & repo setup
-- [x] Phase 1 — Object detection module
+- [✅] Phase 0 — Environment & repo setup
+- [✅] Phase 1 — Object detection module
       → `detection/detector.py` built and tested via webcam.
       YOLOv8n, CPU-only, ~55ms/frame inference (~18fps).
       13-class COCO whitelist (person, car, bicycle, bus, truck, motorcycle,
       traffic light, stop sign, bench, chair, dog, backpack, suitcase).
       Confirmed: boxes + labels display correctly, console prints per-frame ms.
-- [x] Phase 2 — Depth estimation module
-- [X] Phase 3 — Fusion engine (priority + NLG)
-- [ ] Phase 4 — Backend API (FastAPI + WebSocket)
+- [✅] Phase 2 — Depth estimation module
+- [✅] Phase 3 — Fusion engine (priority + NLG)
+- [✅] Phase 4 — Backend API (FastAPI + WebSocket)
 - [ ] Phase 5 — Frontend PWA
 - [ ] Phase 6 — End-to-end integration & tuning
 - [ ] Phase 7 — Accuracy & performance evaluation

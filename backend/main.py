@@ -176,6 +176,7 @@ async def ws_stream(websocket: WebSocket):
                     result = await loop.run_in_executor(
                         _executor, _run_pipeline_sync, frame, debouncer, time.time()
                     )
+                    print(result)
                     await websocket.send_json(result)
                 except Exception as e:
                     # One bad/slow frame must never crash the server or
