@@ -15,7 +15,18 @@ CLASS_CRITICALITY = {
 }
 DEFAULT_CRITICALITY = 0.5
 DEFAULT_MIN_INTERVAL_S = 2.0
-DEFAULT_URGENCY_SHIFT_THRESHOLD = 0.15
+
+# ---------------------------------------------------------------------------
+# CHANGED (was 0.15): with real camera input -- as opposed to Phase 3's
+# hardcoded demo observations -- distance_m jitters slightly from frame to
+# frame even when nothing in the scene actually moved, because Depth
+# Anything V2 re-infers the depth map from scratch on every frame with no
+# temporal smoothing. That jitter alone was enough to cross a 0.15 urgency
+# swing and re-trigger speech almost every cycle once the 2s floor cleared.
+# 0.30 asks for a swing that reflects a real change (object genuinely
+# got closer/further or more/less central), not sensor noise.
+# ---------------------------------------------------------------------------
+DEFAULT_URGENCY_SHIFT_THRESHOLD = 0.30
 TOP_N = 3
 
 
@@ -112,6 +123,23 @@ def generate_frame_speech(ranked_observations: List[Dict], **kwargs) -> Optional
 
 
 class Debouncer:
+    # -----------------------------------------------------------------
+    # NEW: which frame_position pairs count as "the same place" for
+    # debounce purposes. get_frame_position() draws two hard lines at
+    # exactly 1/3 and 2/3 of the frame width. An object sitting a few
+    # pixels either side of one of those lines -- completely normal
+    # detection jitter, not real motion -- flips its label between e.g.
+    # "left" and "center" from one frame to the next. should_speak()
+    # used to treat that label flip as "a new object entered the top 3",
+    # which is wrong: it's the SAME object that never actually moved.
+    # Only left<->right is excluded, since that genuinely means the
+    # object crossed the entire frame and IS worth a fresh announcement.
+    # -----------------------------------------------------------------
+    _ADJACENT_POSITIONS = {
+        ("left", "center"), ("center", "left"),
+        ("center", "right"), ("right", "center"),
+    }
+
     def __init__(self, min_interval_s: float = DEFAULT_MIN_INTERVAL_S,
                  urgency_shift_threshold: float = DEFAULT_URGENCY_SHIFT_THRESHOLD):
         self.min_interval_s = min_interval_s
@@ -124,16 +152,60 @@ class Debouncer:
     def _identity(obs: Dict) -> Tuple[str, str]:
         return (obs["class_name"], obs["frame_position"])
 
+    @classmethod
+    def _same_identity(cls, a: Tuple[str, str], b: Tuple[str, str]) -> bool:
+        """
+        NEW: fuzzy identity match used instead of exact tuple equality.
+        Same class AND (same position OR a one-bucket-adjacent position)
+        counts as "the same object we already announced" -- see
+        _ADJACENT_POSITIONS above for why.
+        """
+        class_a, pos_a = a
+        class_b, pos_b = b
+        if class_a != class_b:
+            return False
+        return pos_a == pos_b or (pos_a, pos_b) in cls._ADJACENT_POSITIONS
+
+    def _find_prev_urgency(self, identity: Tuple[str, str]) -> Optional[float]:
+        """
+        NEW: fuzzy version of `self.last_urgencies.get(identity)`. A plain
+        dict .get() does an EXACT key match, so if an object's position
+        label flipped since it was last announced, the exact key would
+        never be found -- prev would always come back None, and the loop
+        below would treat it as "never seen before" and speak anyway.
+        That silently defeated the fuzzy match in should_speak() above,
+        which is exactly the bug this method closes.
+        """
+        for prev_identity, urgency in self.last_urgencies.items():
+            if self._same_identity(identity, prev_identity):
+                return urgency
+        return None
+
     def should_speak(self, ranked_observations: List[Dict], current_time: float) -> bool:
         if not ranked_observations:
             return False
         if self.last_spoken_time is not None and (current_time - self.last_spoken_time) < self.min_interval_s:
             return False
+
         current_ids = {self._identity(o) for o in ranked_observations}
-        if current_ids != self.last_identities:
+
+        # CHANGED: this used to be `if current_ids != self.last_identities`,
+        # an exact set-equality check. That meant ANY position-label flip
+        # on ANY object -- even one still sitting in the same physical
+        # spot -- made the two sets unequal and forced a re-announcement.
+        # This now asks a narrower, more correct question: is there a
+        # CURRENT object that doesn't fuzzy-match ANY previously-announced
+        # object? Only then is something genuinely new in the top 3.
+        if any(not any(self._same_identity(cur, prev) for prev in self.last_identities)
+               for cur in current_ids):
             return True
+
+        # CHANGED: uses _find_prev_urgency() (fuzzy) instead of
+        # self.last_urgencies.get(...) (exact-key). See that method's
+        # docstring -- without this, a position-label flip made `prev`
+        # always None here and forced a speak regardless of the fix above.
         for obs in ranked_observations:
-            prev = self.last_urgencies.get(self._identity(obs))
+            prev = self._find_prev_urgency(self._identity(obs))
             if prev is None or abs(obs["urgency"] - prev) >= self.urgency_shift_threshold:
                 return True
         return False
@@ -184,3 +256,32 @@ if __name__ == "__main__":
         if speak:
             print(f"           -> \"{generate_frame_speech(ranked)}\"")
             debouncer.mark_spoken(ranked, t)
+
+    # -----------------------------------------------------------------
+    # NEW: Part 3 demonstrates the exact bug this patch fixes -- an
+    # object that never moved, but whose position label flickers across
+    # a bucket boundary between frames due to ordinary detection jitter.
+    # Before this patch, every one of these frames after the 2s floor
+    # would have re-triggered speech. Now only genuinely new content does.
+    # -----------------------------------------------------------------
+    print("\n[demo] Part 3: position-boundary jitter (the real-camera bug)\n")
+    jitter_debouncer = Debouncer()
+    # A person standing still, right at the left/center boundary.
+    # frame_width=1280 -> boundary sits at x=426.7. bbox center flickers
+    # a few pixels either side of that line between frames -- the object
+    # itself hasn't moved.
+    left_bbox = (330, 200, 520, 900)    # center_x = 425 -> "left"
+    center_bbox = (335, 200, 525, 900)  # center_x = 430 -> "center"
+    jitter_sequence = [
+        (0.0, left_bbox),
+        (2.1, center_bbox),   # position label flips, object didn't move
+        (4.3, left_bbox),     # flips back
+        (6.5, center_bbox),
+    ]
+    for t, bbox in jitter_sequence:
+        obs = annotate_observation({"class_name": "person", "distance_m": 1.2, "bbox": bbox}, FRAME_WIDTH)
+        ranked = score_and_rank([obs])
+        speak = jitter_debouncer.should_speak(ranked, t)
+        print(f"  t={t:>4.1f}s pos={obs['frame_position']:6s} [{'SPEAK' if speak else 'suppressed'}]")
+        if speak:
+            jitter_debouncer.mark_spoken(ranked, t)
