@@ -1,0 +1,17 @@
+# Tunable knobs -- edit these to retune for a demo without touching code.
+# Backend reads this at startup; the frontend fetches the "frame" section
+# from GET /config so app.js doesn't need its own copy of these numbers.
+
+frame:
+  interval_ms: 500      # how often the phone captures + sends a frame
+  capture_width: 480    # resize target width (px) before JPEG encoding
+  jpeg_quality: 0.6      # 0..1
+
+urgency_weights:
+  proximity: 0.5
+  class_criticality: 0.3
+  centrality: 0.2
+
+debounce:
+  min_interval_s: 2.0
+  urgency_shift_threshold: 0.30

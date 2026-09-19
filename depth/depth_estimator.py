@@ -264,15 +264,21 @@ def calibrate(ref_points):
     return {"m": float(m), "c": float(c)}
 
 
-def relative_to_meters(relative_depth_value: float, calibration: dict) -> float:
+def relative_to_meters(
+    relative_depth_value: float,
+    calibration: dict,
+    max_distance_m: float = 15.0,
+) -> float:
     """
     Applies a calibration dict from calibrate() to convert one relative
     depth value into an estimated real-world distance in metres.
     """
     inv_m = calibration["m"] * relative_depth_value + calibration["c"]
-    inv_m = max(inv_m, 1e-6)  # guard against non-physical (negative/zero) inverse-distance
-    return 1.0 / inv_m
 
+    if inv_m <= 0:
+        return max_distance_m
+
+    return min(1.0 / inv_m, max_distance_m)
 
 # ---------------------------------------------------------------------------
 # Calibration persistence

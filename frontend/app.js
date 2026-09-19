@@ -61,7 +61,9 @@ startBtnEl.addEventListener('click', async () => {
   } catch (err) {
     startBtnEl.disabled = false;
     startErrorEl.hidden = false;
-    startErrorEl.textContent = describeMediaError(err);
+    console.error('CAMERA ERROR:', err.name, err.message, err);
+    startErrorEl.textContent = `Camera error: ${err.name}: ${err.message}`;
+    // startErrorEl.textContent = describeMediaError(err);
   }
 });
 

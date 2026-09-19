@@ -156,8 +156,8 @@ Native mobile app, multi-camera setups, cross-session person re-identification, 
 - [✅] Phase 2 — Depth estimation module
 - [✅] Phase 3 — Fusion engine (priority + NLG)
 - [✅] Phase 4 — Backend API (FastAPI + WebSocket)
-- [ ] Phase 5 — Frontend PWA
-- [ ] Phase 6 — End-to-end integration & tuning
+- [✅] Phase 5 — Frontend PWA
+- [✅] Phase 6 — End-to-end integration & tuning (Cloudflare tunnel used for phone/WiFi demo; ~450ms total latency)
 - [ ] Phase 7 — Accuracy & performance evaluation
 - [ ] Phase 8 — Deployment (local demo + cloud)
 - [ ] Phase 9 — Stretch features *(optional)*
